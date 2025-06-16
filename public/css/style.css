@@ -1,0 +1,130 @@
+/* body{
+    background-color: #e8ecef;
+}
+
+.centered{
+    padding-top: 200px;
+    text-align: center;
+}
+
+.secret-text{
+    text-align: center;
+    font-size: 2rem;
+    color: #fff;
+    background-color: #000;
+} */
+
+/* styles.css — Clean Whisper App Styles */
+
+/* Whisper — Dark Mode Cool UI */
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #121212;
+  background-image: radial-gradient(#2a2a2a 1px, transparent 1px);
+  color: #f1f1f1;
+  background-size: 18px 18px;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+
+
+a {
+  text-decoration: none;
+}
+
+/* .navbar {
+  background-color: #ee2727;
+  border-bottom: 1px solid #671313;
+}
+
+.navbar-brand {
+  font-weight: bold;
+  color: #00f2ff !important;
+  font-size: 1.5rem;
+  transition: 0.3s;
+}
+
+.navbar-brand:hover {
+  color: #00ffe0 !important;
+  text-shadow: 0 0 10px #00f2ff;
+} */
+
+.btn-dark,
+.btn-outline-dark {
+  background: linear-gradient(to right, #00f2ff, #8e2de2);
+  border: none;
+  color: #fff;
+  box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+  transition: 0.3s ease;
+}
+
+.btn-dark:hover,
+.btn-outline-dark:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px #00f2ff;
+}
+
+.container {
+  padding-top: 4vh;
+}
+
+.jumbotron {
+  background: linear-gradient(135deg, #1e1e1e, #0f2027, #1a1a2e);
+  background-size: 400% 400%;
+  animation: gradientShift 8s ease infinite;
+
+  padding: 3rem 2rem;
+  border-radius: 1rem;
+  text-align: center;
+
+  box-shadow: 0 0 40px rgba(0, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+
+
+.secret-text {
+  font-size: 1.25rem;
+  margin-top: 1.2rem;
+  color: #b0f7ff;
+  font-style: italic;
+  animation: fadeIn 1s ease-out;
+}
+
+.centered-form {
+  max-width: 420px;
+  margin: auto;
+}
+
+textarea,
+input {
+  background-color: #2a2a2a;
+  color: #fff;
+  border: 1px solid #555;
+  transition: 0.2s;
+}
+
+textarea:focus,
+input:focus {
+  border-color: #00f2ff;
+  box-shadow: 0 0 10px #00f2ff;
+  background-color: #333;
+  outline: none;
+}
+
+footer {
+  text-align: center;
+  color: #888;
+  margin-top: 4rem;
+  font-size: 0.9rem;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
