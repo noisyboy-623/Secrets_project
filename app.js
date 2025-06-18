@@ -2,142 +2,143 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const ejs = require('ejs');
 const mongoose = require('mongoose');
-const encrypt = require('mongoose-encryption');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 
 const app = express();
 
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cookieParser());
 
-// Connect to MongoDB
-mongoose.connect('mongodb+srv://Secrets_user:secret123@cluster0.kcvpco7.mongodb.net/');
+// MongoDB Connection
+mongoose.connect('mongodb+srv://Secrets_user:secret123@cluster0.kcvpco7.mongodb.net/whisperApp');
 
-// Schema with email, password (encrypted), and secret
-const trySchema = new mongoose.Schema({
+// JWT Secret
+const JWT_SECRET = "SuperStrongSecretKey";
+
+// Schema
+const userSchema = new mongoose.Schema({
     email: String,
     password: String,
     secret: String
 });
 
-// Apply encryption plugin (only to password)
-const secretKey = "Thisismysecretkey"; // use strong secret in production
-trySchema.plugin(encrypt, {
-    secret: secretKey,
-    encryptedFields: ['password']
-});
+const User = mongoose.model("User", userSchema);
 
-const Item = mongoose.model('second', trySchema);
+// Middleware: Email & Password Validation
+const validateInput = (req, res, next) => {
+    const { username, password } = req.body;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{6,8}$/;
 
-// Home route
-app.get("/", function (req, res) {
-    res.render("home");
-});
+    if (!emailRegex.test(username)) {
+        return res.send("Invalid email format.");
+    }
 
-// Register
-app.get("/register", function (req, res) {
-    res.render("register");
-});
+    if (!passwordRegex.test(password)) {
+        return res.send("Password must be 6–8 characters, include an uppercase, lowercase letter, and a number.");
+    }
 
-app.post("/register", async function (req, res) {
-    const newUser = new Item({
-        email: req.body.username,
-        password: req.body.password
+    next();
+};
+
+// Middleware: Token Authentication
+const authenticateToken = (req, res, next) => {
+    const token = req.cookies.token;
+
+    if (!token) return res.redirect("/login");
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) return res.send("Session expired or invalid.");
+        req.user = user;
+        next();
     });
+};
 
+// Routes
+
+app.get("/", (req, res) => res.render("home"));
+
+app.get("/register", (req, res) => res.render("register"));
+
+app.post("/register", validateInput, async (req, res) => {
     try {
+        const hashedPassword = await bcrypt.hash(req.body.password, 10);
+        const newUser = new User({
+            email: req.body.username,
+            password: hashedPassword
+        });
         await newUser.save();
+        res.redirect("/login");
+    } catch (err) {
+        console.error("Error registering user:", err);
+        res.send("Registration failed.");
+    }
+});
+
+app.get("/login", (req, res) => res.render("login"));
+
+app.post("/login", validateInput, async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        const user = await User.findOne({ email: username });
+
+        if (!user) return res.send("No user found with that email.");
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) return res.send("Incorrect password.");
+
+        const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "1h" });
+
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: false, // Set to true in production with HTTPS
+            sameSite: "Strict"
+        });
+
         res.redirect("/secrets");
     } catch (err) {
-        console.error("Error saving user:", err);
-        res.send("An error occurred while registering.");
-    }
-});
-
-// Login
-app.get("/login", function (req, res) {
-    res.render("login");
-});
-
-app.post("/login", async function (req, res) {
-    const username = req.body.username;
-    const password = req.body.password;
-
-    try {
-        const foundUser = await Item.findOne({ email: username });
-
-        if (foundUser) {
-            if (foundUser.password === password) {
-                res.redirect("/secrets");
-            } else {
-                console.error("Incorrect password for user:", username);
-                res.send("Incorrect password. Please try again.");
-            }
-        } else {
-            console.error("No user found with that email.");
-            res.send("No user found with that email.");
-        }
-    } catch (err) {
         console.error("Login error:", err);
-        res.send("An error occurred during login.");
+        res.send("Login failed.");
     }
 });
 
-// Secrets page – show users with secrets
-app.get("/secrets", async function (req, res) {
+app.get("/secrets", authenticateToken, async (req, res) => {
     try {
-        const usersWithSecrets = await Item.find({ secret: { $ne: null } });
+        const usersWithSecrets = await User.find({ secret: { $ne: null } });
 
-        if (usersWithSecrets.length > 0) {
-            const randomIndex = Math.floor(Math.random() * usersWithSecrets.length);
-            const randomSecret = usersWithSecrets[randomIndex].secret;
+        const secret = usersWithSecrets.length
+            ? usersWithSecrets[Math.floor(Math.random() * usersWithSecrets.length)].secret
+            : "No secrets submitted yet.";
 
-            res.render("secrets", { secret: randomSecret });
-        } else {
-            res.render("secrets", { secret: "No secrets submitted yet." });
-        }
+        res.render("secrets", { secret });
     } catch (err) {
-        console.error("Error fetching secrets:", err);
-        res.render("secrets", { secret: "Error loading secret." });
+        console.error("Secrets fetch error:", err);
+        res.send("Could not load secrets.");
     }
 });
 
+app.get("/submit", authenticateToken, (req, res) => res.render("submit"));
 
-// Submit secret
-app.get("/submit", function (req, res) {
-    res.render("submit");
-});
-
-app.post("/submit", async function (req, res) {
-    const submittedSecret = req.body.secret;
-
+app.post("/submit", authenticateToken, async (req, res) => {
     try {
-        // Only select users that have valid encrypted password fields
-        const users = await Item.find().lean();
-
-        // Pick the first user and then safely reload by ID
-        if (users.length > 0) {
-            const user = await Item.findById(users[0]._id); // Encrypted password safe
-            user.secret = submittedSecret;
-            await user.save();
-            res.redirect("/secrets");
-        } else {
-            res.send("No valid users found.");
-        }
+        const submittedSecret = req.body.secret;
+        await User.findByIdAndUpdate(req.user.id, { secret: submittedSecret });
+        res.redirect("/secrets");
     } catch (err) {
-        console.error("Secret submission error:", err);
-        res.send("An error occurred while submitting the secret.");
+        console.error("Submit error:", err);
+        res.send("Failed to submit secret.");
     }
 });
 
-
-
-// Log out – just return to home (no sessions yet)
-app.get("/logout", function (req, res) {
+app.get("/logout", (req, res) => {
+    res.clearCookie("token");
     res.redirect("/");
 });
 
-// Start server
-app.listen(1627, function () {
+app.listen(1627, () => {
     console.log("Server is running on port 1627");
 });
