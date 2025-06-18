@@ -11,7 +11,7 @@ app.use(express.static('public'));
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Connect to MongoDB
-mongoose.connect('mongodb://localhost:27017/secrets');
+mongoose.connect('mongodb+srv://Secrets_user:secret123@cluster0.kcvpco7.mongodb.net/');
 
 // Schema with email, password (encrypted), and secret
 const trySchema = new mongoose.Schema({
