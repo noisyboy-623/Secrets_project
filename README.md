@@ -77,7 +77,8 @@ whisperApp/
    ```bash
    node app.js
 
-**🔐 Security Notes**
+## 🔐 Security Notes
+
 Passwords are hashed using bcrypt
 
 JWT tokens are signed and verified for secure access
@@ -86,7 +87,8 @@ Sensitive fields (like secrets) are encrypted at rest using mongoose-encryption
 
 Session cookies are secured using express-session with cookie flags
 
-**🧑‍💻 Author**
+## 🧑‍💻 Author
+
 Tejas H Shekhar
 
 
