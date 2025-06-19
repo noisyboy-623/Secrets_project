@@ -61,16 +61,20 @@ whisperApp/
    ```bash
    git clone https://github.com/yourusername/secrets-app.git
    cd secrets-app
-2. Install all the required packages using npm:
+   
+2. **Install all the required packages using npm:**
+   ```bash
    npm install
 
-3. Create a .env file in the root directory and add the following:
+3. **Create a .env file in the root directory and add the following:**
+    ```bash
     PORT=3000
     MONGODB_URI=your_mongodb_connection_string
     SECRET=your_encryption_secret
     JWT_SECRET=your_jwt_secret
 
-4. Start the server using:
+4. **Start the server using:**
+   ```bash
    node app.js
 
 **🔐 Security Notes**
